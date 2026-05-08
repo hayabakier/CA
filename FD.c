@@ -1,5 +1,10 @@
 #include <stdio.h>
+#include <stdint.h>
+#include "memory.h"
+#include "parser.h"
 
+int8_t registerFile[64];
+int pc = 0;
 void decode(short int instruction) {
         
         short int opcode = 0;
@@ -48,5 +53,10 @@ void fetch() {
        
         
 }
+int main() {
 
+    parseFile("program.txt");
+
+    return 0;
+}
 
