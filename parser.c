@@ -145,6 +145,8 @@ else if (strcmp(instruction, "SB") == 0) {
         instructionMemory[instructionIndex] = encodedInstruction;
 
         instructionIndex++;
+
+        NumberofInstructions = instructionIndex;
     }
 
     fclose(file);
