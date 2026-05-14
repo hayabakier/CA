@@ -3,6 +3,8 @@
 #include <string.h>
 #include "memory.h"
 #include "parser.h"
+#include "memory.c"
+#include "parser.c"
 
 int8_t registerFile[64] = {0};
 uint16_t pc = 0;
