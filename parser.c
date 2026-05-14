@@ -1,8 +1,6 @@
 #include "parser.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include "memory.h"
+#include <stdio.h>
 
 short int encodeRType(int opcode, int r1, int r2) {
 
@@ -27,6 +25,7 @@ short int encodeIType(int opcode, int r1, int imm) {
 
     return instruction;
 }
+
 void parseFile(char *filename) {
 
     FILE *file = fopen(filename, "r");
@@ -37,116 +36,70 @@ void parseFile(char *filename) {
     }
 
     char line[100];
-
     int instructionIndex = 0;
 
     while (fgets(line, sizeof(line), file)) {
 
-        char *instruction = strtok(line, " \n");
-        char *operand1 = strtok(NULL, " \n");
-        char *operand2 = strtok(NULL, " \n");
+        int r1, r2, imm;
+        short int encodedInstruction;
+        int validInstruction = 1;
 
-        short int encodedInstruction = 0;
-
-        if (strcmp(instruction, "ADD") == 0) {
-
-            int r1 = atoi(operand1 + 1);
-            int r2 = atoi(operand2 + 1);
-
+        if (sscanf(line, "ADD R%d R%d", &r1, &r2) == 2) {
             encodedInstruction = encodeRType(ADD, r1, r2);
         }
 
-        else if (strcmp(instruction, "LDI") == 0) {
+        else if (sscanf(line, "SUB R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(SUB, r1, r2);
+        }
 
-            int r1 = atoi(operand1 + 1);
-            int imm = atoi(operand2);
+        else if (sscanf(line, "MUL R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(MUL, r1, r2);
+        }
 
+        else if (sscanf(line, "AND R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(AND, r1, r2);
+        }
+
+        else if (sscanf(line, "OR R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(OR, r1, r2);
+        }
+
+        else if (sscanf(line, "JR R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(JR, r1, r2);
+        }
+
+        else if (sscanf(line, "LDI R%d %d", &r1, &imm) == 2) {
             encodedInstruction = encodeIType(LDI, r1, imm);
         }
-        else if (strcmp(instruction, "SUB") == 0) {
 
-    int r1 = atoi(operand1 + 1);
-    int r2 = atoi(operand2 + 1);
+        else if (sscanf(line, "BEQZ R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(BEQZ, r1, imm);
+        }
 
-    encodedInstruction = encodeRType(SUB, r1, r2);
-}
+        else if (sscanf(line, "SAL R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(SAL, r1, imm);
+        }
 
-else if (strcmp(instruction, "MUL") == 0) {
+        else if (sscanf(line, "SAR R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(SAR, r1, imm);
+        }
 
-    int r1 = atoi(operand1 + 1);
-    int r2 = atoi(operand2 + 1);
+        else if (sscanf(line, "LB R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(LB, r1, imm);
+        }
 
-    encodedInstruction = encodeRType(MUL, r1, r2);
-}
+        else if (sscanf(line, "SB R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(SB, r1, imm);
+        }
 
-else if (strcmp(instruction, "AND") == 0) {
+        else {
+            validInstruction = 0;
+        }
 
-    int r1 = atoi(operand1 + 1);
-    int r2 = atoi(operand2 + 1);
-
-    encodedInstruction = encodeRType(AND, r1, r2);
-}
-
-else if (strcmp(instruction, "OR") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int r2 = atoi(operand2 + 1);
-
-    encodedInstruction = encodeRType(OR, r1, r2);
-}
-
-else if (strcmp(instruction, "JR") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int r2 = atoi(operand2 + 1);
-
-    encodedInstruction = encodeRType(JR, r1, r2);
-}
-else if (strcmp(instruction, "BEQZ") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int imm = atoi(operand2);
-
-    encodedInstruction = encodeIType(BEQZ, r1, imm);
-}
-
-else if (strcmp(instruction, "SAL") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int imm = atoi(operand2);
-
-    encodedInstruction = encodeIType(SAL, r1, imm);
-}
-
-else if (strcmp(instruction, "SAR") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int imm = atoi(operand2);
-
-    encodedInstruction = encodeIType(SAR, r1, imm);
-}
-
-else if (strcmp(instruction, "LB") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int address = atoi(operand2);
-
-    encodedInstruction = encodeIType(LB, r1, address);
-}
-
-else if (strcmp(instruction, "SB") == 0) {
-
-    int r1 = atoi(operand1 + 1);
-    int address = atoi(operand2);
-
-    encodedInstruction = encodeIType(SB, r1, address);
-}
-
-        instructionMemory[instructionIndex] = encodedInstruction;
-
-        instructionIndex++;
-
-        NumberofInstructions = instructionIndex;
+        if (validInstruction) {
+            instructionMemory[instructionIndex] = encodedInstruction;
+            instructionIndex++;
+        }
     }
 
     fclose(file);
