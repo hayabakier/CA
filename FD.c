@@ -36,10 +36,6 @@ static void update_NZ(int8_t result) {
     set_flag(FLAG_Z, result == 0);
 }
 
-static void update_S_from_NV(void) {
-    set_flag(FLAG_S, get_flag(FLAG_N) ^ get_flag(FLAG_V));
-}
-
 static void update_add_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
     int unsignedSum = (oldR1 & 0xFF) + (oldR2 & 0xFF);
 
@@ -51,7 +47,7 @@ static void update_add_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
                       (oldR1 < 0 && oldR2 < 0 && result >= 0)));
 
     update_NZ(result);
-    update_S_from_NV();
+    set_flag(FLAG_S, get_flag(FLAG_N) ^ get_flag(FLAG_V));
 }
 
 static void update_sub_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
@@ -60,7 +56,7 @@ static void update_sub_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
                       (oldR1 < 0 && oldR2 >= 0 && result >= 0)));
 
     update_NZ(result);
-    update_S_from_NV();
+    set_flag(FLAG_S, get_flag(FLAG_N) ^ get_flag(FLAG_V));
 }
 
 static void print_sreg(void) {
@@ -77,18 +73,6 @@ static int8_t sign_extend_6bit(short int value) {
     return imm;
 }
 
-static short int get_opcode(short int instruction) {
-    return (instruction >> 12) & 0xF;
-}
-
-static short int get_r1(short int instruction) {
-    return (instruction >> 6) & 0x3F;
-}
-
-static short int get_r2(short int instruction) {
-    return instruction & 0x3F;
-}
-
 static int8_t rotate_left_8(int8_t value, int amount) {
     uint8_t x = (uint8_t)value;
     amount %= 8;
@@ -102,9 +86,9 @@ static int8_t rotate_right_8(int8_t value, int amount) {
 }
 
 void execute(short int instruction, uint16_t instructionPC) {
-    short int opcode = get_opcode(instruction);
-    short int r1 = get_r1(instruction);
-    short int r2 = get_r2(instruction);          // R-format operand
+    short int opcode = (instruction >> 12) & 0xF;
+    short int r1 = (instruction >> 6) & 0x3F;
+    short int r2 = instruction & 0x3F;         // R-format operand
     int8_t imm = sign_extend_6bit(instruction);  // I-format immediate/address
 
     int8_t oldR1 = registerFile[r1];
@@ -209,9 +193,9 @@ void execute(short int instruction, uint16_t instructionPC) {
 }
 
 void decode(short int instruction, uint16_t instructionPC) {
-    short int opcode = get_opcode(instruction);
-    short int r1 = get_r1(instruction);
-    short int r2 = get_r2(instruction);
+    short int opcode = (instruction >> 12) & 0xF;
+    short int r1 = (instruction >> 6) & 0x3F;
+    short int r2 = instruction & 0x3F;
     int8_t imm = sign_extend_6bit(instruction);
 
     printf("Decode instruction at PC=%u\n", instructionPC);
