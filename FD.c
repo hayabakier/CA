@@ -4,10 +4,9 @@
 #include "parser.h"
 #include "memory.c"
 #include "parser.c"
+#include "execute.c"
 
-int8_t registerFile[64];
-int pc = 0;
-void decode(short int instruction) {
+void decode(short int instruction,uint16_t instructionPC) {
         
         int8_t opcode = 0;
         int8_t r1 = 0;
@@ -48,18 +47,16 @@ void decode(short int instruction) {
     }
 
     printf("---------- \n");
-             
+    
+    execute(instruction, instructionPC);
 }
 
 void fetch() {
+    uint16_t instructionPC = pc;
     short int instruction = instructionMemory[pc];
-    decode(instruction);
-    pc++;
+     pc++;
+    decode(instruction, instructionPC);
+     
 }
-int main() {
-    parseFile("program.txt");
-    for (int i = 0; i < NumberofInstructions; i++)
-        fetch();
-    return 0;
-}
+
 
