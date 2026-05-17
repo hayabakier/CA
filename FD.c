@@ -11,20 +11,20 @@
 void fetch(int cycle)
 {
     short int instruction = instructionMemory[pc];
-    uint16_t  ipc         = pc;
+    uint16_t ipc = pc;
     pc++;
 
-    IF_ID.valid       = 1;
+    IF_ID.valid = 1;
     IF_ID.pc_of_instr = (int)ipc;
-    IF_ID.raw         = instruction;
-    IF_ID.opcode      = (instruction >> 12) & 0xF;
-    IF_ID.r1          = (instruction >>  6) & 0x3F;
-    IF_ID.r2          =  instruction        & 0x3F;
+    IF_ID.raw = instruction;
+    IF_ID.opcode = (instruction >> 12) & 0xF;
+    IF_ID.r1 = (instruction >> 6) & 0x3F;
+    IF_ID.r2 = instruction & 0x3F;
 
     /* sign-extend 6-bit immediate */
-    int raw_imm  = instruction & 0x3F;
-    IF_ID.imm    = (raw_imm & 0x20) ? (int8_t)(raw_imm | ~0x3F)
-                                     : (int8_t)raw_imm;
+    int raw_imm = instruction & 0x3F;
+    IF_ID.imm = (raw_imm & 0x20) ? (int8_t)(raw_imm | ~0x3F)
+                                 : (int8_t)raw_imm;
 
     /* Snapshot register values (may be patched by forwarding in ID) */
     IF_ID.val_r1 = registerFile[IF_ID.r1];
@@ -38,7 +38,8 @@ void fetch(int cycle)
 /* ── decode ──────────────────────────────────────────────────────────── */
 void decode(int cycle)
 {
-    if (!IF_ID.valid) {
+    if (!IF_ID.valid)
+    {
         /* bubble in IF/ID — pass a bubble through to ID/EX */
         printf("[ID  | cycle %d] (bubble)\n", cycle);
         ID_EX.valid = 0;
@@ -50,11 +51,12 @@ void decode(int cycle)
      * If a load-use stall is needed it sets stall_pipeline = 1.          */
     detectHazard();
 
-    if (stall_pipeline) {
+    if (stall_pipeline)
+    {
         /* Hold: do NOT advance IF_ID into ID_EX; insert bubble in ID/EX  */
         printf("[ID  | cycle %d] ** STALL ** holding R%d for load-use hazard\n",
                cycle, IF_ID.r1);
-        ID_EX.valid = 0;   /* bubble propagates into EX */
+        ID_EX.valid = 0; /* bubble propagates into EX */
         /* IF_ID is NOT cleared — it will be decoded again next cycle     */
         /* Also undo the PC increment done in fetch() this cycle           */
         pc--;
