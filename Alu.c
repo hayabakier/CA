@@ -30,7 +30,9 @@ int ALU(int operandA, int operandB, int operation) {
         /* ADD */
         case 0:
             output = (uint8_t)((uint8_t)operandA + (uint8_t)operandB);
-            C_flag = (((unsigned)operandA + (unsigned)operandB) >> 8) & 1;
+            int temp1 = operandA & 0xFF;
+            int temp2 = operandB & 0xFF;
+            C_flag = ((temp1 + temp2) & 0x100) == 0x100 ? 1 : 0;
             V_flag = (((operandA >> 7) & 1) == ((operandB >> 7) & 1)) &&
                      (((output   >> 7) & 1) != ((operandA >> 7) & 1));
             N_flag = (output >> 7) & 1;
