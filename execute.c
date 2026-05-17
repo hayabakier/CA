@@ -58,21 +58,9 @@ static void print_sreg(void) {
            get_flag(FLAG_S), get_flag(FLAG_Z));
 }
 
-static int8_t sign_extend_6bit(short int value) {
-    int8_t imm = (int8_t)(value & 0x3F);
-    if (imm & 0x20)
-        imm |= (int8_t)0xC0;
-    return imm;
-}
 
-
-
-void execute(short int instruction, uint16_t instructionPC) {
-    short int opcode = (instruction >> 12) & 0xF;
-    short int r1 = (instruction >> 6) & 0x3F;
-    short int r2 = instruction & 0x3F;         // R-format operand
-    int8_t imm = sign_extend_6bit(instruction);  // I-format immediate/address
-
+void execute(int8_t opcode, int8_t r1, int8_t r2, int8_t imm, uint16_t instructionPC) {
+ 
     int8_t oldR1 = registerFile[r1];
     int8_t oldR2 = registerFile[r2];
     int8_t result = 0;

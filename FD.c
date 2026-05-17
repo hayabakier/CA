@@ -49,7 +49,7 @@ void decode(short int instruction,short int instructionPC) {
 
     printf("---------- \n");
     
-    execute(instruction, instructionPC);
+    execute(opcode, r1, r2, imm, instructionPC);
 }
 
 void fetch() {
