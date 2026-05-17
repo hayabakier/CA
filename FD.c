@@ -5,8 +5,9 @@
 #include "memory.c"
 #include "parser.c"
 #include "execute.c"
+#include "registers.h"
 
-void decode(short int instruction,uint16_t instructionPC) {
+void decode(short int instruction,short int instructionPC) {
         
         int8_t opcode = 0;
         int8_t r1 = 0;
@@ -15,7 +16,7 @@ void decode(short int instruction,uint16_t instructionPC) {
         int8_t valueR1 = 0;
         int8_t valueR2 = 0;
         
-        opcode = ((instruction >> 12) & 0b1111);;
+        opcode = ((instruction >> 12) & 0b1111);
         r1 = (instruction >> 6) & 0b111111;
         r2 = instruction & 0b111111;
         imm = instruction & 0b111111;
@@ -52,11 +53,10 @@ void decode(short int instruction,uint16_t instructionPC) {
 }
 
 void fetch() {
-    uint16_t instructionPC = pc;
+    short int instructionPC = pc;
     short int instruction = instructionMemory[pc];
      pc++;
     decode(instruction, instructionPC);
-     
 }
 
 

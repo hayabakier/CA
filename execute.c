@@ -3,17 +3,8 @@
 #include <string.h>
 #include "memory.h"
 #include "parser.h"
+#include "registers.h"  
 
-
-int8_t registerFile[64] = {0};
-uint16_t pc = 0;
-uint8_t sreg = 0;
-
-#define FLAG_C 4
-#define FLAG_V 3
-#define FLAG_N 2
-#define FLAG_S 1
-#define FLAG_Z 0
 
 static void sreg_guardian(void) {
     sreg &= 0x1F;  
