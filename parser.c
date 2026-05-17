@@ -1,43 +1,105 @@
-/* parser.c — encodes assembly instructions into 16-bit words */
 #include "defs.h"
 
 short int encodeRType(int opcode, int r1, int r2) {
-    return (short int)((opcode << 12) | (r1 << 6) | r2);
+
+    short int instruction = 0;
+
+    instruction |= (opcode << 12);
+    instruction |= (r1 << 6);
+    instruction |= r2;
+
+    return instruction;
 }
 
 short int encodeIType(int opcode, int r1, int imm) {
-    return (short int)((opcode << 12) | (r1 << 6) | (imm & 0x3F));
+
+    short int instruction = 0;
+
+    imm &= 0b111111;
+
+    instruction |= (opcode << 12);
+    instruction |= (r1 << 6);
+    instruction |= imm;
+
+    return instruction;
 }
 
 void parseFile(const char *filename) {
+
     FILE *file = fopen(filename, "r");
-    if (!file) { printf("Error opening file: %s\n", filename); return; }
+
+    if (file == NULL) {
+        printf("Error opening file\n");
+        return;
+    }
 
     char line[100];
-    int  idx = 0, r1, r2, imm, valid;
-    short int enc;
+    int instructionIndex = 0;
 
     while (fgets(line, sizeof(line), file)) {
-        valid = 1;
-        if      (sscanf(line, "ADD R%d R%d",  &r1, &r2)  == 2) enc = encodeRType(ADD,  r1, r2);
-        else if (sscanf(line, "SUB R%d R%d",  &r1, &r2)  == 2) enc = encodeRType(SUB,  r1, r2);
-        else if (sscanf(line, "MUL R%d R%d",  &r1, &r2)  == 2) enc = encodeRType(MUL,  r1, r2);
-        else if (sscanf(line, "AND R%d R%d",  &r1, &r2)  == 2) enc = encodeRType(AND,  r1, r2);
-        else if (sscanf(line, "OR R%d R%d",   &r1, &r2)  == 2) enc = encodeRType(OR,   r1, r2);
-        else if (sscanf(line, "JR R%d R%d",   &r1, &r2)  == 2) enc = encodeRType(JR,   r1, r2);
-        else if (sscanf(line, "LDI R%d %d",   &r1, &imm) == 2) enc = encodeIType(LDI,  r1, imm);
-        else if (sscanf(line, "BEQZ R%d %d",  &r1, &imm) == 2) enc = encodeIType(BEQZ, r1, imm);
-        else if (sscanf(line, "SAL R%d %d",   &r1, &imm) == 2) enc = encodeIType(SAL,  r1, imm);
-        else if (sscanf(line, "SAR R%d %d",   &r1, &imm) == 2) enc = encodeIType(SAR,  r1, imm);
-        else if (sscanf(line, "LB R%d %d",    &r1, &imm) == 2) enc = encodeIType(LB,   r1, imm);
-        else if (sscanf(line, "SB R%d %d",    &r1, &imm) == 2) enc = encodeIType(SB,   r1, imm);
-        else valid = 0;
 
-        if (valid) {
-            instructionMemory[idx++] = enc;
+        int r1, r2, imm;
+        short int encodedInstruction;
+        int validInstruction = 1;
+
+        if (sscanf(line, "ADD R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(ADD, r1, r2);
+        }
+
+        else if (sscanf(line, "SUB R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(SUB, r1, r2);
+        }
+
+        else if (sscanf(line, "MUL R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(MUL, r1, r2);
+        }
+
+        else if (sscanf(line, "AND R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(AND, r1, r2);
+        }
+
+        else if (sscanf(line, "OR R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(OR, r1, r2);
+        }
+
+        else if (sscanf(line, "JR R%d R%d", &r1, &r2) == 2) {
+            encodedInstruction = encodeRType(JR, r1, r2);
+        }
+
+        else if (sscanf(line, "LDI R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(LDI, r1, imm);
+        }
+
+        else if (sscanf(line, "BEQZ R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(BEQZ, r1, imm);
+        }
+
+        else if (sscanf(line, "SAL R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(SAL, r1, imm);
+        }
+
+        else if (sscanf(line, "SAR R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(SAR, r1, imm);
+        }
+
+        else if (sscanf(line, "LB R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(LB, r1, imm);
+        }
+
+        else if (sscanf(line, "SB R%d %d", &r1, &imm) == 2) {
+            encodedInstruction = encodeIType(SB, r1, imm);
+        }
+
+        else {
+            validInstruction = 0;
+        }
+
+        if (validInstruction) {
+            instructionMemory[instructionIndex] = encodedInstruction;
+            instructionIndex++;
             NumberofInstructions++;
         }
     }
+
     fclose(file);
-    printf("Parsed %d instructions.\n", NumberofInstructions);
 }

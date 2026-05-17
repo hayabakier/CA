@@ -1,13 +1,4 @@
-/* =======================================================================
- * main.c — Package 4 pipeline driver
- *
- * 3-stage Harvard pipeline: IF → ID → EX
- * One new instruction fetched per cycle (when available).
- * Stage order per cycle: EX → ID → IF
- *   • EX first: commits result + sets fwd_result + may flush latches
- *   • ID second: reads regs, applies forwarding (skipped if flushed)
- *   • IF third:  fetches next instruction into IF_ID
- * ======================================================================= */
+
 #include "defs.h"
 
 #include "memory.c"
@@ -24,7 +15,7 @@ int main(void)
 
     int cycle = 1;
 
-    while (pc < (uint16_t)NumberofInstructions || IF_ID.valid || ID_EX.valid)
+    while (pc < (short int)NumberofInstructions || IF_ID.valid || ID_EX.valid)
     {
         current_cycle = cycle;
         printf("\n========== Clock Cycle %d ==========\n", cycle);
@@ -39,9 +30,9 @@ int main(void)
             decode(cycle);
 
             /* ── IF stage ── */
-            if (pc < (uint16_t)NumberofInstructions && !stall_pipeline)
+            if (pc < (short int)NumberofInstructions && !stall_pipeline)
                 fetch(cycle);
-            else if (pc >= (uint16_t)NumberofInstructions && !stall_pipeline)
+            else if (pc >= (short int)NumberofInstructions && !stall_pipeline)
                 printf("[IF  | cycle %d] (no more instructions)\n", cycle);
         } else {
             /* Branch/jump flushed the pipeline — skip ID and IF this cycle */

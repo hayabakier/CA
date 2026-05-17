@@ -1,10 +1,3 @@
-/* =======================================================================
- * defs.h  —  Single unified header for Package 4 pipeline simulator
- *
- * Package 4: Harvard, 3-stage pipeline (IF → ID → EX), 8-bit registers,
- *            16-bit instructions, circular shifts (SAL/SAR).
- *            Cycle count: 3 + (n-1)*1
- * ======================================================================= */
 
 #ifndef DEFS_H
 #define DEFS_H
@@ -41,22 +34,21 @@
 
 /* ── Pipeline latch ─────────────────────────────────────────────────── */
 typedef struct {
-    int       valid;        /* 1 = real instruction, 0 = bubble/empty   */
-    int       pc_of_instr;  /* PC of this instruction when fetched       */
-    int       opcode;
-    int       r1;           /* bits [11:6]                               */
-    int       r2;           /* bits [ 5:0]                               */
+    int valid;        /* 1 = real instruction, 0 = bubble/empty   */
+    short int pc_of_instr;  /* PC of this instruction when fetched       */
+    int8_t   opcode;
+    int8_t    r1;           /* bits [11:6]                               */
+    int8_t    r2;           /* bits [ 5:0]                               */
     int8_t    imm;          /* sign-extended 6-bit immediate             */
     int8_t    val_r1;       /* value of r1 read in ID (after forwarding) */
     int8_t    val_r2;       /* value of r2 read in ID (after forwarding) */
     short int raw;          /* original 16-bit encoded instruction       */
 } Instruction;
 
-/* ── Global state – defined in exactly one .c each ─────────────────── */
 
 /* execute.c owns registers + SREG + cycle counter + forwarding state   */
 extern int8_t   registerFile[REG_FILE_SIZE];
-extern uint16_t pc;
+extern short int pc;
 extern uint8_t  sreg;
 extern int      current_cycle;
 extern int8_t   fwd_result;    /* value produced by EX last cycle        */
@@ -81,7 +73,7 @@ extern int flush_pending;
 /* parser.c */
 short int encodeRType(int opcode, int r1, int r2);
 short int encodeIType(int opcode, int r1, int imm);
-void      parseFile(const char *filename);
+void parseFile(const char *filename);
 
 /* FD.c */
 void fetch(int cycle);

@@ -1,22 +1,10 @@
-/* =======================================================================
- * memory_WB.c — forwarding helper + cycle-state printer
- *
- * In Package 4 there are no separate MEM/WB stages — everything happens
- * inside EX.  This file only provides:
- *   • applyForwarding()  — patches val_r1/val_r2 in the ID latch using
- *                          the result that EX produced last cycle.
- *   • printCycleState()  — summary printed at the end of every cycle.
- * ======================================================================= */
+
 #include "defs.h"
 
-/*
- * applyForwarding — called during ID, after detectHazard().
- * If EX produced a result last cycle (fwd_valid == 1) and the current
- * ID instruction reads that register, patch the latch values.
- */
+
 void applyForwarding(Instruction *latch, int cycle)
 {
-    if (!fwd_valid || fwd_dest_reg <= 0)
+    if (!fwd_valid || fwd_dest_reg < 0)
         return;
 
     int reads_r1 = 0, reads_r2 = 0;
