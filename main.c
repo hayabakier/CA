@@ -11,7 +11,7 @@
 
 int main(void)
 {
-    parseFile("program.txt");
+    parseFile("test.txt");
 
     int cycle = 1;
 
@@ -23,9 +23,10 @@ int main(void)
         flush_pending = 0;
 
         /* ── EX stage ── */
-        execute(cycle);   /* may set flush_pending and clear latches */
+        execute(cycle); /* may set flush_pending and clear latches */
 
-        if (!flush_pending) {
+        if (!flush_pending)
+        {
             /* ── ID stage ── */
             decode(cycle);
 
@@ -34,7 +35,9 @@ int main(void)
                 fetch(cycle);
             else if (pc >= (short int)NumberofInstructions && !stall_pipeline)
                 printf("[IF  | cycle %d] (no more instructions)\n", cycle);
-        } else {
+        }
+        else
+        {
             /* Branch/jump flushed the pipeline — skip ID and IF this cycle */
             printf("[ID  | cycle %d] (flushed)\n", cycle);
             printf("[IF  | cycle %d] (flushed)\n", cycle);
