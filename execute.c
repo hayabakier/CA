@@ -6,36 +6,37 @@
 #include "registers.h"  
 
 
-static void sreg_guardian(void) {
-    sreg &= 0x1F;  
+static void sreg_guardian(void) { //keeps 3 upper bits of sreg always 0
+    sreg &= 0b00011111; 
 }
 
-static int get_flag(int bit) {
+static int get_flag(int bit) { //reads 1 specific bit of sreg
     return (sreg >> bit) & 1;
 }
 
 static void set_flag(int bit, int value) {
     if (value)
-        sreg |= (uint8_t)(1u << bit);
+        sreg |= (uint8_t)(1u << bit); //sets bit to 1
     else
-        sreg &= (uint8_t)~(1u << bit);
+        sreg &= (uint8_t)~(1u << bit); //sets bit to 0
 
     sreg_guardian();
 }
 
 static void update_NZ(int8_t result) {
-    set_flag(FLAG_N, result < 0);
-    set_flag(FLAG_Z, result == 0);
+    set_flag(FLAG_N, result < 0); // N=1 if result is negative
+    set_flag(FLAG_Z, result == 0); // Z=1 if result is zero
 }
 
 static void update_add_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
-    int unsignedSum = (oldR1 & 0xFF) + (oldR2 & 0xFF);
+    int unsignedSum = (oldR1 & 0b11111111) + (oldR2 & 0b11111111); //anding the bottom 8 bits with ones 3a4an lama ne extend le 32 bits lw el number negative mybwz4 el carry
 
     // C is updated every ADD instruction. Check bit 8 of the unsigned result.
-    set_flag(FLAG_C, (unsignedSum & 0x100) != 0);
+    set_flag(FLAG_C, (unsignedSum & 0b100000000) != 0); //lw bit 8 be 1, C=1
 
     // V is updated every ADD/SUB. ADD overflow: same sign inputs, opposite sign result.
-    set_flag(FLAG_V, ((oldR1 >= 0 && oldR2 >= 0 && result < 0) ||
+    
+    set_flag(FLAG_V, ((oldR1 >= 0 && oldR2 >= 0 && result < 0) || //if both operands pos and result is neg or both operandsn are neg and result is pos, V=1
                       (oldR1 < 0 && oldR2 < 0 && result >= 0)));
 
     update_NZ(result);
@@ -64,7 +65,7 @@ void execute(int8_t opcode, int8_t r1, int8_t r2, int8_t imm, uint16_t instructi
     int8_t oldR1 = registerFile[r1];
     int8_t oldR2 = registerFile[r2];
     int8_t result = 0;
-    int address = imm & 0x3F; // LB/SB use the 6-bit ADDRESS field as an unsigned address.
+    int address = imm & 0b00111111; // LB/SB use the 6-bit ADDRESS field as an unsigned address.
 
     printf("Execute instruction: opcode=%d r1=R%d r2=R%d imm=%d\n", opcode, r1, r2, imm);
 
