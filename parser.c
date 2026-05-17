@@ -99,6 +99,7 @@ void parseFile(char *filename) {
         if (validInstruction) {
             instructionMemory[instructionIndex] = encodedInstruction;
             instructionIndex++;
+            NumberofInstructions++;
         }
     }
 
