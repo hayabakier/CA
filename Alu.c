@@ -27,19 +27,19 @@ int ALU(int operandA, int operandB, int operation) {
 
     switch (operation) {
 
-        /* ADD */
-        case 0:
-            output = (uint8_t)((uint8_t)operandA + (uint8_t)operandB);
-            int temp1 = operandA & 0xFF;
-            int temp2 = operandB & 0xFF;
-            C_flag = ((temp1 + temp2) & 0x100) == 0x100 ? 1 : 0;
-            V_flag = (((operandA >> 7) & 1) == ((operandB >> 7) & 1)) &&
-                     (((output   >> 7) & 1) != ((operandA >> 7) & 1));
-            N_flag = (output >> 7) & 1;
-            S_flag = N_flag ^ V_flag;
-            Z_flag = (output == 0);
-            break;
-
+       /* ADD */
+case 0: {
+    int temp1 = operandA & 0xFF;
+    int temp2 = operandB & 0xFF;
+    output = (uint8_t)(temp1 + temp2);
+    C_flag = ((temp1 + temp2) & 0x100) == 0x100 ? 1 : 0;
+    V_flag = (((operandA >> 7) & 1) == ((operandB >> 7) & 1)) &&
+             (((output   >> 7) & 1) != ((operandA >> 7) & 1));
+    N_flag = (output >> 7) & 1;
+    S_flag = N_flag ^ V_flag;
+    Z_flag = (output == 0);
+    break;
+}
         /* SUB */
         case 1:
             output = (uint8_t)((uint8_t)operandA - (uint8_t)operandB);
