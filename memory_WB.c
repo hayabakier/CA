@@ -1,7 +1,6 @@
 
 #include "defs.h"
 
-
 void applyForwarding(Instruction *latch, int cycle)
 {
     if (!fwd_valid || fwd_dest_reg < 0)
@@ -51,20 +50,32 @@ void applyForwarding(Instruction *latch, int cycle)
 void printCycleState(int cycle)
 {
     printf("  --- End of Cycle %d ---\n", cycle);
-
+    int itype = (IF_ID.opcode == LDI || IF_ID.opcode == BEQZ ||
+                 IF_ID.opcode == SAL || IF_ID.opcode == SAR ||
+                 IF_ID.opcode == LB || IF_ID.opcode == SB);
     if (IF_ID.valid)
-        printf("  [LATCH IF/ID] PC=%d  opcode=%d  R%d  R%d  imm=%d\n",
-               IF_ID.pc_of_instr, IF_ID.opcode,
-               IF_ID.r1, IF_ID.r2, (int)IF_ID.imm);
+        if (itype)
+            printf("  [LATCH IF/ID] PC=%d  opcode=%d  R%d  imm=%d\n",
+                   IF_ID.pc_of_instr, IF_ID.opcode,
+                   IF_ID.r1, (int)IF_ID.imm);
+        else
+            printf("  [LATCH IF/ID] PC=%d  opcode=%d  R%d  R%d\n",
+                   IF_ID.pc_of_instr, IF_ID.opcode,
+                   IF_ID.r1, IF_ID.r2);
     else
         printf("  [LATCH IF/ID] (bubble)\n");
 
     if (ID_EX.valid)
-        printf("  [LATCH ID/EX] PC=%d  opcode=%d  R%d(%d)  R%d(%d)  imm=%d\n",
-               ID_EX.pc_of_instr, ID_EX.opcode,
-               ID_EX.r1, (int)ID_EX.val_r1,
-               ID_EX.r2, (int)ID_EX.val_r2,
-               (int)ID_EX.imm);
+        if (itype)
+            printf("  [LATCH ID/EX] PC=%d  opcode=%d  R%d(%d)  imm=%d\n",
+                   ID_EX.pc_of_instr, ID_EX.opcode,
+                   ID_EX.r1, (int)ID_EX.val_r1,
+                   (int)ID_EX.imm);
+        else
+            printf("  [LATCH ID/EX] PC=%d  opcode=%d  R%d(%d)  R%d(%d)\n",
+                   ID_EX.pc_of_instr, ID_EX.opcode,
+                   ID_EX.r1, (int)ID_EX.val_r1,
+                   ID_EX.r2, (int)ID_EX.val_r2);
     else
         printf("  [LATCH ID/EX] (bubble)\n");
 }

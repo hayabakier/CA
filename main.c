@@ -11,7 +11,7 @@
 
 int main(void)
 {
-    parseFile("test.txt");
+    parseFile("program.txt");
 
     int cycle = 1;
 

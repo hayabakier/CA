@@ -66,14 +66,27 @@ void execute(int cycle)
     }
 
     int8_t opcode = ID_EX.opcode;
-    int8_t r1     = ID_EX.r1;
-    int8_t r2     = ID_EX.r2;
-    int8_t imm    = ID_EX.imm;
-    int8_t vr1    = ID_EX.val_r1;
-    int8_t vr2    = ID_EX.val_r2;
-    int    addr   = imm & 0x3F;
+    int8_t r1 = ID_EX.r1;
+    int8_t r2 = ID_EX.r2;
+    int8_t imm = ID_EX.imm;
+    int8_t vr1 = ID_EX.val_r1;
+    int8_t vr2 = ID_EX.val_r2;
+    int addr = imm & 0x3F;
     int8_t result = 0;
-    int    branched = 0;
+    int branched = 0;
+
+    int itype = (opcode == LDI || opcode == BEQZ ||
+                 opcode == SAL || opcode == SAR ||
+                 opcode == LB || opcode == SB);
+
+    if (itype)
+        printf("[EX  | cycle %d] PC=%d  opcode=%d  R%d(%d)  imm=%d\n",
+               cycle, ID_EX.pc_of_instr, opcode,
+               r1, (int)vr1, (int)imm);
+    else
+        printf("[EX  | cycle %d] PC=%d  opcode=%d  R%d(%d)  R%d(%d)\n",
+               cycle, ID_EX.pc_of_instr, opcode,
+               r1, (int)vr1, r2, (int)vr2);
 
     switch (opcode)
     {

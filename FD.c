@@ -54,19 +54,18 @@ void decode(int cycle)
 
     applyForwarding(&ID_EX, cycle);
 
-    if (ID_EX.opcode == ADD || ID_EX.opcode == SUB || ID_EX.opcode == MUL ||
-        ID_EX.opcode == AND || ID_EX.opcode == OR || ID_EX.opcode == JR)
-    {
-        printf("[ID  | cycle %d] PC=%d  opcode=%d  R%d(%d)  R%d(%d)\n",
-               cycle, ID_EX.pc_of_instr, ID_EX.opcode,
-               ID_EX.r1, (int)ID_EX.val_r1,
-               ID_EX.r2, (int)ID_EX.val_r2);
-    }
-    else
-    {
+    int itype = (ID_EX.opcode == LDI || ID_EX.opcode == BEQZ ||
+                 ID_EX.opcode == SAL || ID_EX.opcode == SAR ||
+                 ID_EX.opcode == LB || ID_EX.opcode == SB);
+
+    if (itype)
         printf("[ID  | cycle %d] PC=%d  opcode=%d  R%d(%d)  imm=%d\n",
                cycle, ID_EX.pc_of_instr, ID_EX.opcode,
                ID_EX.r1, (int)ID_EX.val_r1,
                (int)ID_EX.imm);
-    }
+    else
+        printf("[ID  | cycle %d] PC=%d  opcode=%d  R%d(%d)  R%d(%d)\n",
+               cycle, ID_EX.pc_of_instr, ID_EX.opcode,
+               ID_EX.r1, (int)ID_EX.val_r1,
+               ID_EX.r2, (int)ID_EX.val_r2);
 }
