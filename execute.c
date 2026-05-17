@@ -1,184 +1,263 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include "memory.h"
-#include "parser.h"
+/* =======================================================================
+ * execute.c — EX stage for Package 4
+ *
+ * EX does everything: ALU, memory access, writeback — no MEM/WB stages.
+ * Owns: registerFile, pc, sreg, current_cycle, forwarding, flush_pending.
+ * ======================================================================= */
+#include "defs.h"
 
-
-int8_t registerFile[64] = {0};
+/* ── Globals owned here ─────────────────────────────────────────────── */
+int8_t registerFile[REG_FILE_SIZE] = {0};
 uint16_t pc = 0;
 uint8_t sreg = 0;
+int current_cycle = 0;
+int flush_pending = 0; /* set when branch/jump taken */
 
-#define FLAG_C 4
-#define FLAG_V 3
-#define FLAG_N 2
-#define FLAG_S 1
-#define FLAG_Z 0
+/* Forwarding state */
+int8_t fwd_result = 0;
+int fwd_dest_reg = -1;
+int fwd_valid = 0;
 
-static void sreg_guardian(void) {
-    sreg &= 0x1F;  
-}
-
-static int get_flag(int bit) {
-    return (sreg >> bit) & 1;
-}
-
-static void set_flag(int bit, int value) {
-    if (value)
+/* ── SREG helpers ────────────────────────────────────────────────────── */
+static void sreg_guardian(void) { sreg &= 0x1F; }
+static int get_flag(int bit) { return (sreg >> bit) & 1; }
+static void set_flag(int bit, int val)
+{
+    if (val)
         sreg |= (uint8_t)(1u << bit);
     else
         sreg &= (uint8_t)~(1u << bit);
-
     sreg_guardian();
 }
-
-static void update_NZ(int8_t result) {
-    set_flag(FLAG_N, result < 0);
-    set_flag(FLAG_Z, result == 0);
+static void update_NZ(int8_t r)
+{
+    set_flag(FLAG_N, r < 0);
+    set_flag(FLAG_Z, r == 0);
 }
-
-static void update_add_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
-    int unsignedSum = (oldR1 & 0xFF) + (oldR2 & 0xFF);
-
-    // C is updated every ADD instruction. Check bit 8 of the unsigned result.
-    set_flag(FLAG_C, (unsignedSum & 0x100) != 0);
-
-    // V is updated every ADD/SUB. ADD overflow: same sign inputs, opposite sign result.
-    set_flag(FLAG_V, ((oldR1 >= 0 && oldR2 >= 0 && result < 0) ||
-                      (oldR1 < 0 && oldR2 < 0 && result >= 0)));
-
-    update_NZ(result);
+static void update_add_flags(int8_t a, int8_t b, int8_t r)
+{
+    unsigned usum = (unsigned)(uint8_t)a + (unsigned)(uint8_t)b;
+    set_flag(FLAG_C, (usum & 0x100) != 0);
+    set_flag(FLAG_V, ((a >= 0 && b >= 0 && r < 0) || (a < 0 && b < 0 && r >= 0)));
+    update_NZ(r);
     set_flag(FLAG_S, get_flag(FLAG_N) ^ get_flag(FLAG_V));
 }
-
-static void update_sub_flags(int8_t oldR1, int8_t oldR2, int8_t result) {
-
-    set_flag(FLAG_V, ((oldR1 >= 0 && oldR2 < 0 && result < 0) ||
-                      (oldR1 < 0 && oldR2 >= 0 && result >= 0)));
-
-    update_NZ(result);
+static void update_sub_flags(int8_t a, int8_t b, int8_t r)
+{
+    set_flag(FLAG_V, ((a >= 0 && b < 0 && r < 0) || (a < 0 && b >= 0 && r >= 0)));
+    update_NZ(r);
     set_flag(FLAG_S, get_flag(FLAG_N) ^ get_flag(FLAG_V));
 }
-
-static void print_sreg(void) {
-    printf("SREG = %u [C=%d V=%d N=%d S=%d Z=%d]\n",
-           sreg,
+static void print_sreg(void)
+{
+    printf("  SREG=%u [C=%d V=%d N=%d S=%d Z=%d]\n", (unsigned)sreg,
            get_flag(FLAG_C), get_flag(FLAG_V), get_flag(FLAG_N),
            get_flag(FLAG_S), get_flag(FLAG_Z));
 }
 
-static int8_t sign_extend_6bit(short int value) {
-    int8_t imm = (int8_t)(value & 0x3F);
-    if (imm & 0x20)
-        imm |= (int8_t)0xC0;
-    return imm;
-}
+/* ── execute ─────────────────────────────────────────────────────────── */
+void execute(int cycle)
+{
+    flush_pending = 0;
+    fwd_valid = 0;
+    fwd_dest_reg = -1;
 
+    if (!ID_EX.valid)
+    {
+        printf("[EX  | cycle %d] (bubble)\n", cycle);
+        return;
+    }
 
-
-void execute(short int instruction, uint16_t instructionPC) {
-    short int opcode = (instruction >> 12) & 0xF;
-    short int r1 = (instruction >> 6) & 0x3F;
-    short int r2 = instruction & 0x3F;         // R-format operand
-    int8_t imm = sign_extend_6bit(instruction);  // I-format immediate/address
-
-    int8_t oldR1 = registerFile[r1];
-    int8_t oldR2 = registerFile[r2];
+    int opcode = ID_EX.opcode;
+    int r1 = ID_EX.r1;
+    int r2 = ID_EX.r2;
+    int8_t imm = ID_EX.imm;
+    int8_t vr1 = ID_EX.val_r1;
+    int8_t vr2 = ID_EX.val_r2;
+    int addr = (int)(unsigned char)imm; /* unsigned 6-bit address */
     int8_t result = 0;
-    int address = imm & 0x3F; // LB/SB use the 6-bit ADDRESS field as an unsigned address.
+    int branched = 0; /* set to 1 if PC was redirected              */
 
-    printf("Execute instruction: opcode=%d r1=R%d r2=R%d imm=%d\n", opcode, r1, r2, imm);
+    printf("[EX  | cycle %d] PC=%d  opcode=%d  R%d(%d)  R%d(%d)  imm=%d\n",
+           cycle, ID_EX.pc_of_instr, opcode,
+           r1, (int)vr1, r2, (int)vr2, (int)imm);
 
-    switch (opcode) {
-        case ADD:
-            result = (int8_t)(oldR1 + oldR2);
+    switch (opcode)
+    {
+    case ADD:
+        result = (int8_t)(vr1 + vr2);
+        update_add_flags(vr1, vr2, result);
+        if (r1 != 0)
+        {
             registerFile[r1] = result;
-            update_add_flags(oldR1, oldR2, result);
-            printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
-            break;
-
-        case SUB:
-            result = (int8_t)(oldR1 - oldR2);
-            registerFile[r1] = result;
-            update_sub_flags(oldR1, oldR2, result);
-            printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
-            break;
-
-        case MUL:
-            result = (int8_t)(oldR1 * oldR2);
-            registerFile[r1] = result;
-            update_NZ(result);          // MUL affects N and Z only from these flags.
-            printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
-            break;
-
-        case LDI:
-            registerFile[r1] = imm;
-            printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
-            break;
-
-        case BEQZ:
-            if (oldR1 == 0) {
-                pc = (uint16_t)(instructionPC + 1 + imm);
-                printf("BEQZ taken: PC changed to %u in EX stage\n", pc);
-            } else {
-                printf("BEQZ not taken\n");
-            }
-            break;
-
-        case AND:
-            result = (int8_t)(oldR1 & oldR2);
-            registerFile[r1] = result;
-            update_NZ(result);
-            printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
-            break;
-
-        case OR:
-            result = (int8_t)(oldR1 | oldR2);
-            registerFile[r1] = result;
-            update_NZ(result);
-            printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
-            break;
-
-        case JR:
-            pc = (uint16_t)(((uint8_t)oldR1 << 8) | (uint8_t)oldR2);
-            printf("JR: PC changed to %u in EX stage\n", pc);
-            break;
-
-        case SAL:
-        result = (int8_t)(oldR1 << (imm & 0x3F));
-        registerFile[r1] = result;
-        update_NZ(result);
-        printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
+            printf("[EX  | cycle %d] ADD: R%d = %d + %d = %d\n", cycle, r1, (int)vr1, (int)vr2, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
         break;
 
+    case SUB:
+        result = (int8_t)(vr1 - vr2);
+        update_sub_flags(vr1, vr2, result);
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] SUB: R%d = %d - %d = %d\n", cycle, r1, (int)vr1, (int)vr2, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+
+    case MUL:
+        result = (int8_t)(vr1 * vr2);
+        update_NZ(result);
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] MUL: R%d = %d * %d = %d\n", cycle, r1, (int)vr1, (int)vr2, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+
+    case LDI:
+        result = imm;
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] LDI: R%d = %d\n", cycle, r1, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+
+    case BEQZ:
+        if (vr1 == 0)
+        {
+            pc = (uint16_t)(ID_EX.pc_of_instr + 1 + imm);
+            printf("[EX  | cycle %d] BEQZ taken: R%d=0 -> PC=%u\n", cycle, r1, pc);
+            branched = 1;
+        }
+        else
+        {
+            printf("[EX  | cycle %d] BEQZ not taken: R%d=%d\n", cycle, r1, (int)vr1);
+        }
+        break;
+
+    case AND:
+        result = (int8_t)(vr1 & vr2);
+        update_NZ(result);
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] AND: R%d = %d & %d = %d\n", cycle, r1, (int)vr1, (int)vr2, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+
+    case OR:
+        result = (int8_t)(vr1 | vr2);
+        update_NZ(result);
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] OR: R%d = %d | %d = %d\n", cycle, r1, (int)vr1, (int)vr2, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+
+    case JR:
+        pc = (uint16_t)(((uint8_t)vr1 << 8) | (uint8_t)vr2);
+        printf("[EX  | cycle %d] JR: PC -> %u (R%d=0x%02X R%d=0x%02X)\n",
+               cycle, pc, r1, (uint8_t)vr1, r2, (uint8_t)vr2);
+        branched = 1;
+        break;
+
+    case SAL:
+    {
+        int shift = (int)(imm & 0x3F);
+        result = (int8_t)((uint8_t)vr1 << shift);
+        update_NZ(result);
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] SAL: R%d = %d << %d = %d\n", cycle, r1, (int)vr1, shift, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+    }
     case SAR:
-        result = (int8_t)(oldR1 >> (imm & 0x3F));
-        registerFile[r1] = result;
+    {
+        int shift = (int)(imm & 0x3F);
+        result = (int8_t)((int8_t)vr1 >> shift);
         update_NZ(result);
-        printf("R%d changed to %d in EX stage\n", r1, registerFile[r1]);
+        if (r1 != 0)
+        {
+            registerFile[r1] = result;
+            printf("[EX  | cycle %d] SAR: R%d = %d >> %d = %d\n", cycle, r1, (int)vr1, shift, (int)result);
+            printf("  R%d changed to %d\n", r1, (int)result);
+        }
+        fwd_result = result;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+    }
+    case LB:
+    {
+        int8_t loaded = dataMemory[addr];
+        if (r1 != 0)
+        {
+            registerFile[r1] = loaded;
+            printf("[EX  | cycle %d] LB: dataMemory[%d]=%d -> R%d\n", cycle, addr, (int)loaded, r1);
+            printf("  R%d changed to %d\n", r1, (int)loaded);
+        }
+        fwd_result = loaded;
+        fwd_dest_reg = r1;
+        fwd_valid = (r1 != 0);
+        break;
+    }
+    case SB:
+        dataMemory[addr] = vr1;
+        printf("[EX  | cycle %d] SB: R%d(%d) -> dataMemory[%d]\n", cycle, r1, (int)vr1, addr);
+        printf("  dataMemory[%d] changed to %d\n", addr, (int)vr1);
         break;
 
-        case LB:
-            if (address >= 0 && address < 64) {
-                registerFile[r1] = dataMemory[address];
-                printf("R%d changed to %d from dataMemory[%d] in EX stage\n",
-                       r1, registerFile[r1], address);
-            }
-            break;
-
-        case SB:
-            if (address >= 0 && address < 64) {
-                dataMemory[address] = oldR1;
-                printf("dataMemory[%d] changed to %d in EX stage\n", address, dataMemory[address]);
-            }
-            break;
-
-        default:
-            printf("Unknown opcode: %d\n", opcode);
-            break;
+    default:
+        printf("[EX  | cycle %d] Unknown opcode: %d\n", cycle, opcode);
+        break;
     }
 
     sreg_guardian();
     print_sreg();
-    printf("----------\n");
+
+    /* ── Clear the latch we just consumed ──────────────────────────── */
+    memset(&ID_EX, 0, sizeof(Instruction));
+
+    /* ── Control hazard flush ────────────────────────────────────────── */
+    if (branched)
+    {
+        flush_pending = 1;
+        printf("[FLUSH | cycle %d] branch/jump taken -> PC=%u"
+               " — flushing IF/ID and ID/EX\n",
+               cycle, pc);
+        memset(&IF_ID, 0, sizeof(Instruction));
+        fwd_valid = 0;
+    }
 }
