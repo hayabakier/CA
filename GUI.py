@@ -139,7 +139,7 @@ class SimulatorGUI:
         # Sub-header strip
         sub = tk.Frame(self.root, bg=BG_GOLD, pady=2)
         sub.pack(fill=tk.X)
-        tk.Label(sub, text="CSEN 601  •  Harvard Architecture  •  Circular Shifts  •  Serving fresh pipeline cycles since 2026",
+        tk.Label(sub, text="CSEN 601  •  Harvard Architecture  •  Arithmetic Shifts  •  Serving fresh pipeline cycles since 2026",
                  font=("Courier New", 9, "bold"), bg=BG_GOLD, fg=FG_DARK).pack()
 
     def _animate_cheese(self, label):
@@ -299,7 +299,7 @@ class SimulatorGUI:
         lines = [
             ("═" * RECEIPT_WIDTH, "separator"),
             ("    🍔  DOUBLE McHARVARD  🍔    ", "header"),
-            ("       WITH CHEESE CIRCULAR SHIFTS   ", "cheese"),
+            ("       WITH CHEESE ARITHMETIC SHIFTS   ", "cheese"),
             ("═" * RECEIPT_WIDTH, "separator"),
             ("", "normal"),
             ("  Welcome to the Pipeline Diner!", "normal"),
@@ -610,7 +610,8 @@ class SimulatorGUI:
             ("═" * W, "separator"),
             ("  🍔  ORDER READY TO SERVE!  🍔   ", "header"),
             ("═" * W, "separator"),
-            (f"  Total Clock Cycles:  {total}", "gold"),
+
+            #(f"  Total Clock Cycles:  {total}", "gold"),
             ("  Press [Enter] or Next ▶         ", "normal"),
             ("  to serve cycle #1               ", "normal"),
             ("─" * W, "separator"),
@@ -911,7 +912,7 @@ class SimulatorGUI:
         win.geometry("450x320")
         tk.Label(win, text="🍔 Double McHarvard with Cheese",
                  font=TITLE_FONT, bg=BG_MAIN, fg=FG_ACCENT).pack(pady=10)
-        tk.Label(win, text="Pipeline Simulator GUI\nCSEN 601 — Package 4\n\nHarvard Architecture\nCircular Shifts\n\nBuilt with Python & Tkinter\n\n✨ WITH CHEESE ✨",
+        tk.Label(win, text="Pipeline Simulator GUI\nCSEN 601 — Package 4\n\nHarvard Architecture\nArithmetic Shifts\n\nBuilt with Python & Tkinter\n\n✨ WITH CHEESE ✨",
                  font=RECEIPT_FONT, bg=BG_MAIN, fg=FG_MAIN, justify=tk.CENTER).pack()
         tk.Button(win, text="Close", command=win.destroy,
                   bg=BG_HEADER, fg=FG_MAIN, font=RECEIPT_FONT_B,
