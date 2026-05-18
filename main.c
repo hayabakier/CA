@@ -45,12 +45,14 @@ int main(void)
     for (int i = 0; i < REG_FILE_SIZE; i++)
         printf("  R%-2d = %d\n", i, (int)registerFile[i]);
     printf("  PC   = %u\n", (unsigned)pc);
-    printf("  SREG = %u  [C=%d V=%d N=%d S=%d Z=%d]\n",
-           (unsigned)sreg,
-           (sreg >> FLAG_C) & 1, (sreg >> FLAG_V) & 1,
-           (sreg >> FLAG_N) & 1, (sreg >> FLAG_S) & 1,
-           (sreg >> FLAG_Z) & 1);
-
+    printf("  SREG = ");
+for (int i = 7; i >= 0; i--)
+    printf("%d", (sreg >> i) & 1);
+    printf("  [C=%d V=%d N=%d S=%d Z=%d]\n",
+       (sreg >> FLAG_C) & 1, (sreg >> FLAG_V) & 1,
+       (sreg >> FLAG_N) & 1, (sreg >> FLAG_S) & 1,
+       (sreg >> FLAG_Z) & 1);
+       
     printf("\nInstruction Memory (non-zero entries):\n");
     for (int i = 0; i < INSTR_MEM_SIZE; i++)
         if (instructionMemory[i] != 0)
