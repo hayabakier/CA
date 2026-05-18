@@ -46,8 +46,8 @@ void decode(int cycle)
     }
 
     ID_EX = IF_ID;
-    memset(&IF_ID, 0, sizeof(Instruction));
     ID_EX.valid = 1;
+    IF_ID.valid = 0; 
 
     ID_EX.val_r1 = registerFile[ID_EX.r1];
     ID_EX.val_r2 = registerFile[ID_EX.r2];

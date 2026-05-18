@@ -1,14 +1,6 @@
 
 #include "defs.h"
 
-#include "memory.c"
-#include "parser.c"
-#include "pipeline.c"
-#include "hazard.c"
-#include "memory_WB.c"
-#include "FD.c"
-#include "execute.c"
-
 int main(void)
 {
     parseFile("program.txt");
