@@ -172,7 +172,7 @@ class SimulatorGUI:
                  font=RECEIPT_FONT, anchor="w").grid(row=0, column=1, sticky="ew", padx=6)
         tk.Button(file_grid, text="Browse…", command=self._browse_program,
                   bg=BG_GOLD, fg=FG_DARK, font=RECEIPT_FONT_B,
-                  relief=tk.FLAT, cursor="hand2").grid(row=0, column=2, sticky="e")
+                  relief=tk.FLAT, cursor="hand2").grid(row=0, column=2, sticky="e", pady=(0, 4))
 
         tk.Label(file_grid, text="Simulator (.exe):", bg=BG_SIDEBAR, fg=FG_MAIN,
                  font=RECEIPT_FONT, anchor="w").grid(row=1, column=0, sticky="w", pady=2)
@@ -181,7 +181,7 @@ class SimulatorGUI:
                  font=RECEIPT_FONT, anchor="w").grid(row=1, column=1, sticky="ew", padx=6)
         tk.Button(file_grid, text="Browse…", command=self._browse_sim,
                   bg=BG_GOLD, fg=FG_DARK, font=RECEIPT_FONT_B,
-                  relief=tk.FLAT, cursor="hand2").grid(row=1, column=2, sticky="e")
+                  relief=tk.FLAT, cursor="hand2").grid(row=1, column=2, sticky="e", pady=(4, 0))
 
         row3 = tk.Frame(ctrl, bg=BG_SIDEBAR)
         row3.pack(fill=tk.X, padx=6, pady=6)
@@ -729,23 +729,14 @@ class SimulatorGUI:
                        bg=BG_GOLD, fg=FG_DARK, font=("Courier New", 9, "bold"), pady=2)
         sub.pack(fill=tk.X)
 
-        # Filter toggle
+        # Memory viewer always lists every entry, including zero / empty cells.
         ctrl_bar = tk.Frame(win, bg=BG_SIDEBAR)
         ctrl_bar.pack(fill=tk.X, padx=6, pady=4)
 
-        self._mem_show_all = tk.BooleanVar(value=False)
-
-        def _refresh_mem():
-            _populate(self._mem_show_all.get())
-
-        tk.Checkbutton(ctrl_bar, text="Show zero / empty entries",
-                       variable=self._mem_show_all, command=_refresh_mem,
-                       bg=BG_SIDEBAR, fg=FG_MAIN, selectcolor=BG_MAIN,
-                       font=RECEIPT_FONT, activebackground=BG_SIDEBAR,
-                       activeforeground=FG_ACCENT).pack(side=tk.LEFT, padx=4)
-
-        tk.Label(ctrl_bar, text="  (unchecked = non-zero only)",
-                 bg=BG_SIDEBAR, fg=FG_ACCENT, font=("Courier New", 8)).pack(side=tk.LEFT)
+        tk.Label(ctrl_bar,
+                 text="Showing full memory contents: all 1024 instruction entries and all 2048 data entries.",
+                 bg=BG_SIDEBAR, fg=FG_MAIN, font=RECEIPT_FONT,
+                 anchor="w").pack(side=tk.LEFT, padx=4)
 
         # Two side-by-side panes
         panes = tk.Frame(win, bg=BG_MAIN)
@@ -783,48 +774,32 @@ class SimulatorGUI:
         dmem_txt.tag_config("zero",    foreground="#aaaaaa",     font=("Courier New", 9))
         dmem_txt.tag_config("header",  foreground=BG_HEADER,     font=("Courier New", 9, "bold"))
 
-        def _populate(show_all: bool):
-            # — Instruction memory —
+        def _populate():
+            # — Instruction memory: always show all 1024 entries —
             imem_txt.config(state=tk.NORMAL)
             imem_txt.delete("1.0", tk.END)
             imem_txt.insert(tk.END, f"  {'IDX':>5}  {'VALUE (decimal)':>16}  {'HEX':>6}\n", "header")
             imem_txt.insert(tk.END, "  " + "─" * 33 + "\n", "header")
-            nz_count = 0
             for i in range(1024):
                 val = instr_mem.get(i, 0)
-                if val != 0:
-                    nz_count += 1
-                if val == 0 and not show_all:
-                    continue
                 tag = "nonzero" if val != 0 else "zero"
                 imem_txt.insert(tk.END,
                     f"  [{i:>4}]  {val:>16}  0x{val & 0xFFFF:04X}\n", tag)
-            if not show_all:
-                imem_txt.insert(tk.END,
-                    f"\n  ({nz_count} non-zero / 1024 total)\n", "header")
             imem_txt.config(state=tk.DISABLED)
 
-            # — Data memory —
+            # — Data memory: always show all 2048 entries —
             dmem_txt.config(state=tk.NORMAL)
             dmem_txt.delete("1.0", tk.END)
             dmem_txt.insert(tk.END, f"  {'IDX':>5}  {'VALUE (decimal)':>16}  {'HEX':>4}\n", "header")
             dmem_txt.insert(tk.END, "  " + "─" * 30 + "\n", "header")
-            nz_count_d = 0
             for i in range(2048):
                 val = data_mem.get(i, 0)
-                if val != 0:
-                    nz_count_d += 1
-                if val == 0 and not show_all:
-                    continue
                 tag = "nonzero" if val != 0 else "zero"
                 dmem_txt.insert(tk.END,
                     f"  [{i:>4}]  {val:>16}  0x{val & 0xFF:02X}\n", tag)
-            if not show_all:
-                dmem_txt.insert(tk.END,
-                    f"\n  ({nz_count_d} non-zero / 2048 total)\n", "header")
             dmem_txt.config(state=tk.DISABLED)
 
-        _populate(False)
+        _populate()
 
         tk.Button(win, text="Close", command=win.destroy,
                   bg=BG_HEADER, fg=FG_MAIN, font=RECEIPT_FONT_B,
