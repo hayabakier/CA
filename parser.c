@@ -1,6 +1,4 @@
-#include "parser.h"
-#include "memory.h"
-#include <stdio.h>
+#include "defs.h"
 
 short int encodeRType(int opcode, int r1, int r2) {
 
@@ -26,7 +24,7 @@ short int encodeIType(int opcode, int r1, int imm) {
     return instruction;
 }
 
-void parseFile(char *filename) {
+void parseFile(const char *filename) {
 
     FILE *file = fopen(filename, "r");
 
