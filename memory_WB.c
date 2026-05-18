@@ -54,14 +54,9 @@ void printCycleState(int cycle)
                  IF_ID.opcode == SAL || IF_ID.opcode == SAR ||
                  IF_ID.opcode == LB || IF_ID.opcode == SB);
     if (IF_ID.valid)
-        if (itype)
-            printf("  [LATCH IF/ID] PC=%d  opcode=%d  R%d  imm=%d\n",
-                   IF_ID.pc_of_instr, IF_ID.opcode,
-                   IF_ID.r1, (int)IF_ID.imm);
-        else
-            printf("  [LATCH IF/ID] PC=%d  opcode=%d  R%d  R%d\n",
-                   IF_ID.pc_of_instr, IF_ID.opcode,
-                   IF_ID.r1, IF_ID.r2);
+        printf("[IF  | cycle %d] PC=%d  encoded=%d\n",
+               cycle, IF_ID.pc_of_instr, IF_ID.raw);
+
     else
         printf("  [LATCH IF/ID] (bubble)\n");
 
