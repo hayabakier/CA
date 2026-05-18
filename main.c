@@ -14,15 +14,15 @@ int main(void)
 
         flush_pending = 0;
 
-        /* ── EX stage ── */
-        execute(cycle); /* may set flush_pending and clear latches */
+      
+        execute(cycle); 
 
         if (!flush_pending)
         {
-            /* ── ID stage ── */
+          
             decode(cycle);
 
-            /* ── IF stage ── */
+            
             if (pc < (short int)NumberofInstructions && !stall_pipeline)
                 fetch(cycle);
             else if (pc >= (short int)NumberofInstructions && !stall_pipeline)
@@ -30,7 +30,6 @@ int main(void)
         }
         else
         {
-            /* Branch/jump flushed the pipeline — skip ID and IF this cycle */
             printf("[ID  | cycle %d] (flushed)\n", cycle);
             printf("[IF  | cycle %d] (flushed)\n", cycle);
         }

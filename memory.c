@@ -1,4 +1,4 @@
-/* memory.c — owns the two memory arrays (no logic) */
+
 #include "defs.h"
 
 short int instructionMemory[INSTR_MEM_SIZE] = {0};

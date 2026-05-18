@@ -31,7 +31,7 @@ void applyForwarding(Instruction *latch, int cycle)
         break;
     }
 
-    if (reads_r1 && latch->r1 == fwd_dest_reg)
+    if (reads_r1 && latch->r1 == fwd_dest_reg && latch->r2 != latch->r1)
     {
         printf("[FWD | cycle %d] R%d: stale=%d -> forwarded=%d\n",
                cycle, latch->r1, (int)latch->val_r1, (int)fwd_result);
@@ -45,7 +45,7 @@ void applyForwarding(Instruction *latch, int cycle)
     }
 }
 
-// printCycleState — summary of latch contents at end of each cycle.
+
 
 void printCycleState(int cycle)
 {
@@ -54,8 +54,8 @@ void printCycleState(int cycle)
                  IF_ID.opcode == SAL || IF_ID.opcode == SAR ||
                  IF_ID.opcode == LB || IF_ID.opcode == SB);
     if (IF_ID.valid)
-        printf("  [LATCH IF/ID] PC=%d  encoded=%d\n",
-                IF_ID.pc_of_instr, IF_ID.raw);
+        printf("   [LATCH IF/ID cycle %d] PC=%d  encoded=%d\n",
+               cycle, IF_ID.pc_of_instr, IF_ID.raw);
 
     else
         printf("  [LATCH IF/ID] (bubble)\n");
