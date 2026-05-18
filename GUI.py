@@ -523,8 +523,8 @@ class SimulatorGUI:
         sim_dir = os.path.dirname(self.sim_path)
         sim_name = os.path.basename(self.sim_path)
 
-        # Copy program as test.txt in sim dir (that's what main.c reads)
-        test_path = os.path.join(sim_dir, "test.txt")
+        # Copy program as program.txt in sim dir (that's what main.c reads)
+        test_path = os.path.join(sim_dir, "program.txt")
         try:
             shutil.copy2(self.program_path, test_path)
         except Exception as e:
@@ -618,6 +618,7 @@ class SimulatorGUI:
 
         if next_idx >= total:
             # Show final state
+            self.current_cycle_idx = total  # mark as past the last cycle
             self._render_final_receipt()
             self._set_status("🏁 Final state displayed! Use Prev ◀ to review cycles.")
             self.next_btn.config(state=tk.DISABLED)
