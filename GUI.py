@@ -160,29 +160,28 @@ class SimulatorGUI:
                               font=RECEIPT_FONT_B, bd=2, relief=tk.RIDGE)
         ctrl.pack(fill=tk.X, padx=4, pady=4)
 
-        row1 = tk.Frame(ctrl, bg=BG_SIDEBAR)
-        row1.pack(fill=tk.X, padx=6, pady=4)
+        # Use a grid frame so both Browse buttons align in the same column
+        file_grid = tk.Frame(ctrl, bg=BG_SIDEBAR)
+        file_grid.pack(fill=tk.X, padx=6, pady=4)
+        file_grid.columnconfigure(1, weight=1)  # filename label stretches
 
-        tk.Label(row1, text="Program (.txt):", bg=BG_SIDEBAR, fg=FG_MAIN,
-                 font=RECEIPT_FONT).pack(side=tk.LEFT)
+        tk.Label(file_grid, text="Program (.txt):", bg=BG_SIDEBAR, fg=FG_MAIN,
+                 font=RECEIPT_FONT, anchor="w").grid(row=0, column=0, sticky="w", pady=2)
         self.program_var = tk.StringVar(value="(none selected)")
-        tk.Label(row1, textvariable=self.program_var, bg=BG_SIDEBAR, fg=FG_ACCENT,
-                 font=RECEIPT_FONT, width=30, anchor="w").pack(side=tk.LEFT, padx=4)
-        tk.Button(row1, text="Browse…", command=self._browse_program,
+        tk.Label(file_grid, textvariable=self.program_var, bg=BG_SIDEBAR, fg=FG_ACCENT,
+                 font=RECEIPT_FONT, anchor="w").grid(row=0, column=1, sticky="ew", padx=6)
+        tk.Button(file_grid, text="Browse…", command=self._browse_program,
                   bg=BG_GOLD, fg=FG_DARK, font=RECEIPT_FONT_B,
-                  relief=tk.FLAT, cursor="hand2").pack(side=tk.LEFT)
+                  relief=tk.FLAT, cursor="hand2").grid(row=0, column=2, sticky="e", pady=(0, 4))
 
-        row2 = tk.Frame(ctrl, bg=BG_SIDEBAR)
-        row2.pack(fill=tk.X, padx=6, pady=2)
-
-        tk.Label(row2, text="Simulator (.exe):", bg=BG_SIDEBAR, fg=FG_MAIN,
-                 font=RECEIPT_FONT).pack(side=tk.LEFT)
+        tk.Label(file_grid, text="Simulator (.exe):", bg=BG_SIDEBAR, fg=FG_MAIN,
+                 font=RECEIPT_FONT, anchor="w").grid(row=1, column=0, sticky="w", pady=2)
         self.sim_var = tk.StringVar(value="(none selected)")
-        tk.Label(row2, textvariable=self.sim_var, bg=BG_SIDEBAR, fg=FG_ACCENT,
-                 font=RECEIPT_FONT, width=30, anchor="w").pack(side=tk.LEFT, padx=4)
-        tk.Button(row2, text="Browse…", command=self._browse_sim,
+        tk.Label(file_grid, textvariable=self.sim_var, bg=BG_SIDEBAR, fg=FG_ACCENT,
+                 font=RECEIPT_FONT, anchor="w").grid(row=1, column=1, sticky="ew", padx=6)
+        tk.Button(file_grid, text="Browse…", command=self._browse_sim,
                   bg=BG_GOLD, fg=FG_DARK, font=RECEIPT_FONT_B,
-                  relief=tk.FLAT, cursor="hand2").pack(side=tk.LEFT)
+                  relief=tk.FLAT, cursor="hand2").grid(row=1, column=2, sticky="e", pady=(4, 0))
 
         row3 = tk.Frame(ctrl, bg=BG_SIDEBAR)
         row3.pack(fill=tk.X, padx=6, pady=6)
@@ -192,6 +191,13 @@ class SimulatorGUI:
                                  bg=BG_HEADER, fg=FG_MAIN, font=("Courier New", 11, "bold"),
                                  relief=tk.FLAT, cursor="hand2", pady=4)
         self.run_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.mem_btn = tk.Button(row3, text="🗄 Memory",
+                                 command=self._show_memory_window,
+                                 bg="#1a6b3a", fg=FG_MAIN, font=RECEIPT_FONT_B,
+                                 relief=tk.FLAT, cursor="hand2", pady=4,
+                                 state=tk.DISABLED)
+        self.mem_btn.pack(side=tk.LEFT, padx=(8, 0))
 
         self.next_btn = tk.Button(row3,
                                   text="Next Cycle ▶  [Enter]",
@@ -558,24 +564,28 @@ class SimulatorGUI:
         lines = self.sim_output_lines
         current_block: list[str] = []
         in_final = False
+        in_cycle = False   # only start collecting once we hit the first cycle header
 
         for line in lines:
             if re.match(r"={5,}\s*Clock Cycle \d+", line):
-                if current_block:
+                if in_cycle and current_block:
                     self.cycles.append(current_block)
                 current_block = [line]
+                in_cycle = True
             elif re.match(r"={5,}\s*Final State", line):
-                if current_block:
+                if in_cycle and current_block:
                     self.cycles.append(current_block)
                 current_block = []
+                in_cycle = False
                 in_final = True
                 self.final_lines.append(line)
             elif in_final:
                 self.final_lines.append(line)
-            else:
+            elif in_cycle:
                 current_block.append(line)
+            # lines before the first cycle header are intentionally ignored
 
-        if current_block and not in_final:
+        if in_cycle and current_block:
             self.cycles.append(current_block)
 
         if not self.cycles:
@@ -587,6 +597,7 @@ class SimulatorGUI:
         self._set_status(f"✅ Simulation complete! {total} clock cycles ready. Press Enter or Next ▶ to begin!")
         self.run_btn.config(state=tk.NORMAL, text="🔥  FIRE UP THE GRILL  (Run Simulation)")
         self.next_btn.config(state=tk.NORMAL)
+        self.mem_btn.config(state=tk.NORMAL)
         self.simulation_done = True
         self.current_cycle_idx = -1
 
@@ -675,6 +686,124 @@ class SimulatorGUI:
         self._set_status(f"📋 Viewing history: Clock Cycle #{idx + 1} of {total}")
         self.prev_btn.config(state=tk.NORMAL if idx > 0 else tk.DISABLED)
         self.next_btn.config(state=tk.NORMAL)
+
+    # ── Memory viewer popup ────────────────────────────────────────────────────
+    def _show_memory_window(self):
+        if not self.simulation_done or not self.final_lines:
+            self._set_status("⚠️  Run a simulation first to view memory.")
+            return
+
+        # Parse instruction and data memory from final_lines
+        instr_mem  = {}   # index -> value (all 1024)
+        data_mem   = {}   # index -> value (all 2048)
+
+        section = None
+        for line in self.final_lines:
+            s = line.strip()
+            if "Instruction Memory" in s:
+                section = "imem"
+                continue
+            elif "Data Memory" in s:
+                section = "dmem"
+                continue
+            if section == "imem":
+                m = re.match(r"instructionMemory\[(\d+)\]\s*=\s*(-?\d+)", s)
+                if m:
+                    instr_mem[int(m.group(1))] = int(m.group(2))
+            elif section == "dmem":
+                m = re.match(r"dataMemory\[(\d+)\]\s*=\s*(-?\d+)", s)
+                if m:
+                    data_mem[int(m.group(1))] = int(m.group(2))
+
+        win = tk.Toplevel(self.root)
+        win.title("🗄  Memory Viewer — Instruction & Data")
+        win.configure(bg=BG_MAIN)
+        win.geometry("860x680")
+
+        hdr = tk.Label(win, text="🗄  MEMORY VIEWER — McHARVARD DINER",
+                       bg=BG_HEADER, fg=FG_MAIN, font=HEADER_FONT, pady=8)
+        hdr.pack(fill=tk.X)
+
+        sub = tk.Label(win,
+                       text="Instruction Memory: 1024 entries  •  Data Memory: 2048 entries",
+                       bg=BG_GOLD, fg=FG_DARK, font=("Courier New", 9, "bold"), pady=2)
+        sub.pack(fill=tk.X)
+
+        # Memory viewer always lists every entry, including zero / empty cells.
+        ctrl_bar = tk.Frame(win, bg=BG_SIDEBAR)
+        ctrl_bar.pack(fill=tk.X, padx=6, pady=4)
+
+        tk.Label(ctrl_bar,
+                 text="Showing full memory contents: all 1024 instruction entries and all 2048 data entries.",
+                 bg=BG_SIDEBAR, fg=FG_MAIN, font=RECEIPT_FONT,
+                 anchor="w").pack(side=tk.LEFT, padx=4)
+
+        # Two side-by-side panes
+        panes = tk.Frame(win, bg=BG_MAIN)
+        panes.pack(fill=tk.BOTH, expand=True, padx=6, pady=(0, 4))
+
+        # — Instruction memory pane —
+        lf_i = tk.LabelFrame(panes, text=" 🗂  Instruction Memory (1024 × 16-bit) ",
+                              bg=BG_SIDEBAR, fg=FG_STAGE_IF, font=RECEIPT_FONT_B,
+                              bd=2, relief=tk.RIDGE)
+        lf_i.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 3))
+
+        imem_txt = tk.Text(lf_i, bg=BG_RECEIPT, fg=FG_DARK,
+                           font=("Courier New", 9), relief=tk.FLAT, state=tk.DISABLED)
+        imem_scroll = tk.Scrollbar(lf_i, command=imem_txt.yview, bg=BG_SIDEBAR)
+        imem_txt.configure(yscrollcommand=imem_scroll.set)
+        imem_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        imem_txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        imem_txt.tag_config("nonzero", foreground=FG_STAGE_EX, font=("Courier New", 9, "bold"))
+        imem_txt.tag_config("zero",    foreground="#aaaaaa",   font=("Courier New", 9))
+        imem_txt.tag_config("header",  foreground=BG_HEADER,   font=("Courier New", 9, "bold"))
+
+        # — Data memory pane —
+        lf_d = tk.LabelFrame(panes, text=" 💾  Data Memory (2048 × 8-bit) ",
+                              bg=BG_SIDEBAR, fg=FG_STAGE_FWD, font=RECEIPT_FONT_B,
+                              bd=2, relief=tk.RIDGE)
+        lf_d.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(3, 0))
+
+        dmem_txt = tk.Text(lf_d, bg=BG_RECEIPT, fg=FG_DARK,
+                           font=("Courier New", 9), relief=tk.FLAT, state=tk.DISABLED)
+        dmem_scroll = tk.Scrollbar(lf_d, command=dmem_txt.yview, bg=BG_SIDEBAR)
+        dmem_txt.configure(yscrollcommand=dmem_scroll.set)
+        dmem_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        dmem_txt.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        dmem_txt.tag_config("nonzero", foreground=FG_STAGE_FWD, font=("Courier New", 9, "bold"))
+        dmem_txt.tag_config("zero",    foreground="#aaaaaa",     font=("Courier New", 9))
+        dmem_txt.tag_config("header",  foreground=BG_HEADER,     font=("Courier New", 9, "bold"))
+
+        def _populate():
+            # — Instruction memory: always show all 1024 entries —
+            imem_txt.config(state=tk.NORMAL)
+            imem_txt.delete("1.0", tk.END)
+            imem_txt.insert(tk.END, f"  {'IDX':>5}  {'VALUE (decimal)':>16}  {'HEX':>6}\n", "header")
+            imem_txt.insert(tk.END, "  " + "─" * 33 + "\n", "header")
+            for i in range(1024):
+                val = instr_mem.get(i, 0)
+                tag = "nonzero" if val != 0 else "zero"
+                imem_txt.insert(tk.END,
+                    f"  [{i:>4}]  {val:>16}  0x{val & 0xFFFF:04X}\n", tag)
+            imem_txt.config(state=tk.DISABLED)
+
+            # — Data memory: always show all 2048 entries —
+            dmem_txt.config(state=tk.NORMAL)
+            dmem_txt.delete("1.0", tk.END)
+            dmem_txt.insert(tk.END, f"  {'IDX':>5}  {'VALUE (decimal)':>16}  {'HEX':>4}\n", "header")
+            dmem_txt.insert(tk.END, "  " + "─" * 30 + "\n", "header")
+            for i in range(2048):
+                val = data_mem.get(i, 0)
+                tag = "nonzero" if val != 0 else "zero"
+                dmem_txt.insert(tk.END,
+                    f"  [{i:>4}]  {val:>16}  0x{val & 0xFF:02X}\n", tag)
+            dmem_txt.config(state=tk.DISABLED)
+
+        _populate()
+
+        tk.Button(win, text="Close", command=win.destroy,
+                  bg=BG_HEADER, fg=FG_MAIN, font=RECEIPT_FONT_B,
+                  relief=tk.FLAT, cursor="hand2").pack(pady=6)
 
     # ── History popup window ───────────────────────────────────────────────────
     def _show_history_window(self):
