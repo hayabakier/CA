@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    parseFile("test.txt");
+    parseFile("program.txt");
 
     int cycle = 1;
 
@@ -52,7 +52,7 @@ for (int i = 7; i >= 0; i--)
        (sreg >> FLAG_C) & 1, (sreg >> FLAG_V) & 1,
        (sreg >> FLAG_N) & 1, (sreg >> FLAG_S) & 1,
        (sreg >> FLAG_Z) & 1);
-       
+
     printf("\nInstruction Memory (non-zero entries):\n");
     for (int i = 0; i < INSTR_MEM_SIZE; i++)
         if (instructionMemory[i] != 0)
