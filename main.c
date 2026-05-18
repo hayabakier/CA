@@ -53,6 +53,8 @@ for (int i = 7; i >= 0; i--)
        (sreg >> FLAG_N) & 1, (sreg >> FLAG_S) & 1,
        (sreg >> FLAG_Z) & 1);
 
+    // Print non-zero memory content
+
     printf("\nInstruction Memory (non-zero entries):\n");
     for (int i = 0; i < INSTR_MEM_SIZE; i++)
         if (instructionMemory[i] != 0)
@@ -63,5 +65,14 @@ for (int i = 7; i >= 0; i--)
         if (dataMemory[i] != 0)
             printf("  dataMemory[%d] = %d\n", i, (int)dataMemory[i]);
 
+    // Print All memory content
+    /*
+    printf("\nInstruction Memory (all entries):\n");
+    for (int i = 0; i < INSTR_MEM_SIZE; i++)
+        printf("  instructionMemory[%d] = %d\n", i, (int)instructionMemory[i]);
+    printf("\nData Memory (all entries):\n");
+    for (int i = 0; i < DATA_MEM_SIZE; i++)
+        printf("  dataMemory[%d] = %d\n", i, (int)dataMemory[i]);
+    */
     return 0;
 }
