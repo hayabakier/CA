@@ -75,7 +75,6 @@ void execute(int cycle)
     int8_t result = 0;
     int branched = 0;
 
-   
     switch (opcode)
     {
     case ADD:

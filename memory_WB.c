@@ -50,15 +50,15 @@ void applyForwarding(Instruction *latch, int cycle)
 void printCycleState(int cycle)
 {
     printf("  --- End of Cycle %d ---\n", cycle);
-    int itype = (ID_EX.opcode == LDI || ID_EX.opcode == BEQZ ||
-             ID_EX.opcode == SAL || ID_EX.opcode == SAR ||
-             ID_EX.opcode == LB  || ID_EX.opcode == SB);
-   if (IF_ID.valid)
-    printf("  [LATCH IF/ID] PC=%d  opcode=%d  R%d  R%d  imm=%d\n",
-           IF_ID.pc_of_instr, IF_ID.opcode,
-           IF_ID.r1, IF_ID.r2, (int)IF_ID.imm);
-else
-    printf("  [LATCH IF/ID] (bubble)\n");
+    int itype = (IF_ID.opcode == LDI || IF_ID.opcode == BEQZ ||
+                 IF_ID.opcode == SAL || IF_ID.opcode == SAR ||
+                 IF_ID.opcode == LB || IF_ID.opcode == SB);
+    if (IF_ID.valid)
+        printf("    [IF  | cycle %d] PC=%d  encoded=%d\n",
+               cycle, IF_ID.pc_of_instr, IF_ID.raw);
+
+    else
+        printf("  [LATCH IF/ID] (bubble)\n");
 
     if (ID_EX.valid)
         if (itype)

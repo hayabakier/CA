@@ -3,7 +3,7 @@
 
 int main(void)
 {
-    parseFile("program.txt");
+    parseFile("test.txt");
 
     int cycle = 1;
 
