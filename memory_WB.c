@@ -31,7 +31,7 @@ void applyForwarding(Instruction *latch, int cycle)
         break;
     }
 
-    if (reads_r1 && latch->r1 == fwd_dest_reg)
+    if (reads_r1 && latch->r1 == fwd_dest_reg && latch->r2 != latch->r1)
     {
         printf("[FWD | cycle %d] R%d: stale=%d -> forwarded=%d\n",
                cycle, latch->r1, (int)latch->val_r1, (int)fwd_result);

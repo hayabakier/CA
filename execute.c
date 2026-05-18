@@ -221,7 +221,7 @@ void execute(int cycle)
     {
         flush_pending = 1;
         printf("[FLUSH | cycle %d] branch/jump taken -> PC=%d"
-               " — flushing IF/ID and ID/EX\n",
+               " flushing IF/ID and ID/EX\n",
                cycle, (int)pc);
         memset(&IF_ID, 0, sizeof(Instruction));
         fwd_valid = 0;
