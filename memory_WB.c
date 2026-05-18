@@ -45,7 +45,7 @@ void applyForwarding(Instruction *latch, int cycle)
     }
 }
 
-// printCycleState — summary of latch contents at end of each cycle.
+
 
 void printCycleState(int cycle)
 {

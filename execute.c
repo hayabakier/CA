@@ -1,26 +1,25 @@
 #include "defs.h"
 
-/* ── Globals owned here ─────────────────────────────────────────────── */
 int8_t registerFile[REG_FILE_SIZE] = {0};
 short int pc = 0;
 uint8_t sreg = 0;
 int current_cycle = 0;
 int flush_pending = 0;
 
-/* Forwarding state */
 int8_t fwd_result = 0;
 int fwd_dest_reg = -1;
 int fwd_valid = 0;
 
-/* ── SREG helpers ────────────────────────────────────────────────────── */
-static void sreg_guardian(void) { sreg &= 0x1F; }
+static void sreg_guardian(void) {
+     sreg &= 0b00011111; }
+
 static int get_flag(int bit) { return (sreg >> bit) & 1; }
 static void set_flag(int bit, int val)
 {
     if (val)
-        sreg |= (uint8_t)(1u << bit);
+        sreg |= (uint8_t)(0b00000001u << bit);
     else
-        sreg &= (uint8_t)~(1u << bit);
+        sreg &= (uint8_t)~(0b00000001u << bit);
     sreg_guardian();
 }
 static void update_NZ(int8_t r)
@@ -31,7 +30,7 @@ static void update_NZ(int8_t r)
 static void update_add_flags(int8_t a, int8_t b, int8_t r)
 {
     unsigned usum = (unsigned)(uint8_t)a + (unsigned)(uint8_t)b;
-    set_flag(FLAG_C, (usum & 0x100) != 0);
+    set_flag(FLAG_C, (usum & 0b100000000) != 0);
     set_flag(FLAG_V, ((a >= 0 && b >= 0 && r < 0) || (a < 0 && b < 0 && r >= 0)));
     update_NZ(r);
     set_flag(FLAG_S, get_flag(FLAG_N) ^ get_flag(FLAG_V));
@@ -52,7 +51,6 @@ static void print_sreg(void)
            get_flag(FLAG_S), get_flag(FLAG_Z));
 }
 
-/* ── execute ─────────────────────────────────────────────────────────── */
 void execute(int cycle)
 {
     flush_pending = 0;
@@ -71,7 +69,7 @@ void execute(int cycle)
     int8_t imm = ID_EX.imm;
     int8_t vr1 = ID_EX.val_r1;
     int8_t vr2 = ID_EX.val_r2;
-    int addr = imm & 0x3F;
+    int addr = imm & 0b00111111;
     int8_t result = 0;
     int branched = 0;
 
@@ -164,7 +162,7 @@ void execute(int cycle)
 
     case SAL:
     {
-        int shift = (int)(imm & 0x3F);
+        int shift = (int)(imm & 0b00111111);
         result = (int8_t)((uint8_t)vr1 << shift);
         update_NZ(result);
         registerFile[r1] = result;
@@ -177,7 +175,7 @@ void execute(int cycle)
     }
     case SAR:
     {
-        int shift = (int)(imm & 0x3F);
+        int shift = (int)(imm & 0b00111111);
         result = (int8_t)((int8_t)vr1 >> shift);
         update_NZ(result);
         registerFile[r1] = result;
@@ -213,10 +211,10 @@ void execute(int cycle)
     sreg_guardian();
     print_sreg();
 
-    /* ── Clear the latch we just consumed ──────────────────────────── */
+    //Clear the latch we just used
     memset(&ID_EX, 0, sizeof(Instruction));
 
-    /* ── Control hazard flush ────────────────────────────────────────── */
+    //Control hazard flush 
     if (branched)
     {
         flush_pending = 1;
