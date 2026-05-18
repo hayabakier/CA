@@ -75,19 +75,6 @@ void execute(int cycle)
     int8_t result = 0;
     int branched = 0;
 
-    int itype = (opcode == LDI || opcode == BEQZ ||
-                 opcode == SAL || opcode == SAR ||
-                 opcode == LB || opcode == SB);
-
-    if (itype)
-        printf("[EX  | cycle %d] PC=%d  opcode=%d  R%d(%d)  imm=%d\n",
-               cycle, ID_EX.pc_of_instr, opcode,
-               r1, (int)vr1, (int)imm);
-    else
-        printf("[EX  | cycle %d] PC=%d  opcode=%d  R%d(%d)  R%d(%d)\n",
-               cycle, ID_EX.pc_of_instr, opcode,
-               r1, (int)vr1, r2, (int)vr2);
-
     switch (opcode)
     {
     case ADD:

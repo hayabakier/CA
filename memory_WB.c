@@ -54,7 +54,7 @@ void printCycleState(int cycle)
                  IF_ID.opcode == SAL || IF_ID.opcode == SAR ||
                  IF_ID.opcode == LB || IF_ID.opcode == SB);
     if (IF_ID.valid)
-        printf("[IF  | cycle %d] PC=%d  encoded=%d\n",
+        printf("    [IF  | cycle %d] PC=%d  encoded=%d\n",
                cycle, IF_ID.pc_of_instr, IF_ID.raw);
 
     else
