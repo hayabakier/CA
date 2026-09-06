@@ -80,9 +80,8 @@ Four sample assembly programs (`program1.txt`–`program4.txt`) are included to 
 
 ## Documentation
 
-- `Project Decription.pdf` — original project specification
 - `Project Report.pdf` — write-up of the design and implementation
-- `Project Demo.mp4` — video walkthrough/demo
+
 
 ## Contributors
 
