@@ -1,0 +1,3 @@
+gcc main.c memory.c parser.c pipeline.c hazard.c memory_WB.c FD.c execute.c -o sim
+
+.\sim.exe
